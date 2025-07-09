@@ -27,7 +27,7 @@ def descargar_modelo_derm_foundation():
     derm_model_folder = "derm_foundation_model"
     if not os.path.exists(derm_model_folder):
         print("☁️ Descargando modelo desde Google Drive...")
-        file_id = "10UwkOM0ON36QETxOxfSynrh9Udu5anNG"
+        file_id = os.environ.get("DERM_MODEL_DRIVE_ID", "")
         subprocess.run(["gdown", "--folder", f"https://drive.google.com/drive/folders/{file_id}", "--output", derm_model_folder])
 
 def predict_skin_condition_local(image_path: str,
