@@ -32,7 +32,7 @@ def descargar_modelo_derm_foundation():
 
 def predict_skin_condition_local(image_path: str,
                                   derm_model_path: str = "derm_foundation_model",
-                                  classifier_path: str = "derm_found_merge_6_class_ovr_logistic_v1.pkl"):
+                                  classifier_path: str = "derm_found_modelo_v1.pkl"):
     descargar_modelo_derm_foundation()
 
     print("📥 Cargando modelo Derm Foundation...")
