@@ -1,9 +1,0 @@
-services:
-  - type: web
-    name: derma-ai-api
-    runtime: python
-    buildCommand: "pip install -r requirements.txt"
-    startCommand: "./start.sh"
-    envVars:
-      - key: PORT
-        value: 10000
