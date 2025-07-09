@@ -4,8 +4,13 @@ import tensorflow as tf
 import joblib
 from PIL import Image
 from io import BytesIO
-import subprocess
+import gdown
 
+# 🧠 Globales en memoria
+derm_infer = None
+xgb_model = None
+
+# Etiquetas y descripciones
 CONDITION_LABELS = {
     0: 'allergic contact dermatitis',
     1: 'eczema',
@@ -23,24 +28,45 @@ CONDITION_DESCRIPTIONS = {
     "urticaria": "Also known as hives; itchy, raised welts on skin."
 }
 
-def descargar_modelo_derm_foundation():
-    derm_model_folder = "derm_foundation_model"
-    if not os.path.exists(derm_model_folder):
-        print("☁️ Descargando modelo desde Google Drive...")
-        file_id = os.environ.get("DERM_MODEL_DRIVE_ID", "")
-        subprocess.run(["gdown", "--folder", f"https://drive.google.com/drive/folders/{file_id}", "--output", derm_model_folder])
+def ensure_model_files():
+    model_folder = "derm_foundation_model"
+    pkl_file = "derm_found_modelo_v1.pkl"
 
-def predict_skin_condition_local(image_path: str,
-                                  derm_model_path: str = "derm_foundation_model",
-                                  classifier_path: str = "derm_found_modelo_v1.pkl"):
-    descargar_modelo_derm_foundation()
+    # IDs desde entorno
+    folder_id = os.environ.get("DERM_MODEL_DRIVE_ID")
+    pkl_id = os.environ.get("DERM_CLASSIFIER_ID")
 
-    print("📥 Cargando modelo Derm Foundation...")
-    derm_model = tf.saved_model.load(derm_model_path)
-    derm_infer = derm_model.signatures["serving_default"]
+    if not os.path.exists(model_folder):
+        print("☁️ Descargando modelo Derm Foundation...")
+        if folder_id:
+            gdown.download_folder(f"https://drive.google.com/drive/folders/{folder_id}", quiet=False)
+        else:
+            raise RuntimeError("❌ No se definió DERM_MODEL_DRIVE_ID")
 
-    print("📥 Cargando clasificador...")
-    xgb_model = joblib.load(classifier_path)
+    if not os.path.exists(pkl_file):
+        print("☁️ Descargando clasificador .pkl...")
+        if pkl_id:
+            gdown.download(f"https://drive.google.com/uc?id={pkl_id}", pkl_file, quiet=False)
+        else:
+            raise RuntimeError("❌ No se definió DERM_CLASSIFIER_ID")
+
+def cargar_modelos():
+    global derm_infer, xgb_model
+
+    if derm_infer is None or xgb_model is None:
+        ensure_model_files()
+
+        print("📥 Cargando modelo Derm Foundation...")
+        derm_model = tf.saved_model.load("derm_foundation_model")
+        derm_infer = derm_model.signatures["serving_default"]
+
+        print("📥 Cargando clasificador...")
+        xgb_model = joblib.load("derm_found_modelo_v1.pkl")
+
+        print("✅ Modelos cargados en memoria.")
+
+def predict_skin_condition_local(image_path: str):
+    cargar_modelos()
 
     print(f"🖼️ Cargando imagen: {image_path}")
     image = Image.open(image_path)
@@ -61,7 +87,6 @@ def predict_skin_condition_local(image_path: str,
     embedding_vector = output['embedding'].numpy().flatten().reshape(1, -1)
 
     print("📊 Realizando predicción...")
-    prediction = xgb_model.predict(embedding_vector)[0]
     probabilities = xgb_model.predict_proba(embedding_vector)[0]
 
     probs = np.array(probabilities)
