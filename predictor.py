@@ -6,7 +6,7 @@ from PIL import Image
 from io import BytesIO
 import gdown
 
-# 🧠 Globales en memoria
+# Variables globales
 derm_infer = None
 xgb_model = None
 
@@ -30,25 +30,14 @@ CONDITION_DESCRIPTIONS = {
 
 def ensure_model_files():
     model_folder = "derm_foundation_model"
-    pkl_file = "derm_found_modelo_v1.pkl"
 
-    # IDs desde entorno
     folder_id = os.environ.get("DERM_MODEL_DRIVE_ID")
-    pkl_id = os.environ.get("DERM_CLASSIFIER_ID")
-
     if not os.path.exists(model_folder):
-        print("☁️ Descargando modelo Derm Foundation...")
         if folder_id:
+            print("☁️ Descargando modelo Derm Foundation...")
             gdown.download_folder(f"https://drive.google.com/drive/folders/{folder_id}", quiet=False)
         else:
-            raise RuntimeError("❌ No se definió DERM_MODEL_DRIVE_ID")
-
-    if not os.path.exists(pkl_file):
-        print("☁️ Descargando clasificador .pkl...")
-        if pkl_id:
-            gdown.download(f"https://drive.google.com/uc?id={pkl_id}", pkl_file, quiet=False)
-        else:
-            raise RuntimeError("❌ No se definió DERM_CLASSIFIER_ID")
+            raise RuntimeError("❌ ERROR: DERM_MODEL_DRIVE_ID no está definido")
 
 def cargar_modelos():
     global derm_infer, xgb_model
@@ -60,7 +49,7 @@ def cargar_modelos():
         derm_model = tf.saved_model.load("derm_foundation_model")
         derm_infer = derm_model.signatures["serving_default"]
 
-        print("📥 Cargando clasificador...")
+        print("📥 Cargando clasificador .pkl local...")
         xgb_model = joblib.load("derm_found_modelo_v1.pkl")
 
         print("✅ Modelos cargados en memoria.")
