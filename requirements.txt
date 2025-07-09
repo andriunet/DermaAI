@@ -5,3 +5,5 @@ numpy
 pillow
 joblib
 gdown
+numpy
+python-multipart
